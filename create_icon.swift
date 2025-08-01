@@ -1,12 +1,12 @@
 import Cocoa
 import CoreGraphics
 
-// Create freezer icon using downloaded image
+// Create freezer icon using icons from icons/ directory
 func createIcon(isEnabled: Bool = true) {
     let size = 1024
     
-    // Load the appropriate base image
-    let baseImageName = isEnabled ? "freezer_blue.png" : "freezer_original.png"
+    // Load the appropriate base image from icons/ directory
+    let baseImageName = isEnabled ? "icons/freezer_enabled.png" : "icons/freezer_disabled.png"
     guard let baseImage = NSImage(contentsOfFile: baseImageName) else {
         print("Error: Could not load \(baseImageName)")
         return

@@ -102,9 +102,9 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Update status bar appearance
   func updateStatusBar() {
     if let statusItem = statusItem {
-      // Use custom icons if available, otherwise fall back to emoji
-      if let enabledImage = NSImage(contentsOfFile: "icon_enabled.png"),
-         let disabledImage = NSImage(contentsOfFile: "icon_disabled.png") {
+      // Use custom icons from icons/ directory, otherwise fall back to emoji
+      if let enabledImage = NSImage(contentsOfFile: "icons/freezer_enabled.png"),
+         let disabledImage = NSImage(contentsOfFile: "icons/freezer_disabled.png") {
         statusItem.button?.image = isEnabled ? enabledImage : disabledImage
         statusItem.button?.title = ""
       } else {
@@ -117,8 +117,8 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Setup status bar
   func setupStatusBar() {
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    // Use custom icon if available, otherwise fall back to emoji
-    if let enabledImage = NSImage(contentsOfFile: "icon_enabled.png") {
+    // Use custom icon from icons/ directory, otherwise fall back to emoji
+    if let enabledImage = NSImage(contentsOfFile: "icons/freezer_enabled.png") {
       statusItem?.button?.image = enabledImage
       statusItem?.button?.title = ""
     } else {
