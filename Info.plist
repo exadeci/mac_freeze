@@ -34,5 +34,7 @@
 	<array>
 		<string>en</string>
 	</array>
+	<key>CFBundleIconFile</key>
+	<string>MacFreeze.icns</string>
 </dict>
 </plist> 

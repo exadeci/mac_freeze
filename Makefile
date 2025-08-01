@@ -30,7 +30,21 @@ $(APP_BUNDLE): $(TARGET) Info.plist
 	@mkdir -p $(APP_NAME)/Contents/Resources
 	@cp $(TARGET) $(APP_BUNDLE)
 	@cp Info.plist $(APP_NAME)/Contents/
+	@if [ -f MacFreeze.icns ]; then \
+		cp MacFreeze.icns $(APP_NAME)/Contents/Resources/; \
+		echo "Icon added to app bundle"; \
+	fi
 	@echo "App bundle created: $(APP_NAME)"
+
+# Generate icon
+icon: create_icon.swift
+	@echo "Generating icon..."
+	@swift create_icon.swift
+	@swift create_iconset.swift
+	@echo "Icon generation complete"
+
+# Build app with icon
+app-with-icon: icon app
 
 # Run the application
 run: build
