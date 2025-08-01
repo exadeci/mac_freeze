@@ -63,6 +63,15 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
     
     menu.addItem(NSMenuItem.separator())
     
+    // Settings item
+    let settingsItem = NSMenuItem(title: "Settings", 
+                                 action: #selector(openSettings), 
+                                 keyEquivalent: "s")
+    settingsItem.target = self
+    menu.addItem(settingsItem)
+    
+    menu.addItem(NSMenuItem.separator())
+    
     // Unfreeze All item
     let unfreezeItem = NSMenuItem(title: "Unfreeze All Processes", 
                                  action: #selector(unfreezeAll), 
@@ -97,6 +106,13 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Unfreeze all processes
   @objc func unfreezeAll() {
     unfreezeAllProcesses()
+  }
+  
+  // Open settings window
+  @objc func openSettings() {
+    let settingsWindow = SettingsWindow()
+    settingsWindow.showWindow(nil)
+    NSApp.activate(ignoringOtherApps: true)
   }
   
   // Update status bar appearance

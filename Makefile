@@ -10,7 +10,7 @@ APP_NAME = MacFreeze.app
 APP_BUNDLE = $(APP_NAME)/Contents/MacOS/$(TARGET)
 
 # Source files
-SOURCES = main.swift
+SOURCES = main.swift SettingsWindow.swift
 
 # Default target
 all: build
