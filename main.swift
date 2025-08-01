@@ -1,6 +1,9 @@
 import Cocoa
 
-class MacFreezeApp: NSObject {
+class MacFreezeApp: NSObject, NSApplicationDelegate {
+  // Static reference for signal handlers
+  static var shared: MacFreezeApp?
+  
   // Global state
   var isEnabled = true
   var statusItem: NSStatusItem?
@@ -9,9 +12,11 @@ class MacFreezeApp: NSObject {
   
   override init() {
     super.init()
+    MacFreezeApp.shared = self
     loadConfiguration()
     setupStatusBar()
     setupNotifications()
+    setupSignalHandlers()
   }
   
   // Load JSON blacklist → [bundleID: delaySeconds]
@@ -109,6 +114,33 @@ class MacFreezeApp: NSObject {
     statusItem?.menu = createStatusBarMenu()
   }
   
+  // Setup signal handlers for graceful shutdown
+  func setupSignalHandlers() {
+    signal(SIGINT) { _ in
+      print("Received SIGINT, unfreezing all processes...")
+      MacFreezeApp.shared?.cleanup()
+      exit(0)
+    }
+    
+    signal(SIGTERM) { _ in
+      print("Received SIGTERM, unfreezing all processes...")
+      MacFreezeApp.shared?.cleanup()
+      exit(0)
+    }
+  }
+  
+  // Cleanup function to unfreeze all processes
+  func cleanup() {
+    print("Cleaning up - unfreezing all processes...")
+    unfreezeAllProcesses()
+  }
+  
+  // NSApplicationDelegate method for graceful termination
+  func applicationWillTerminate(_ notification: Notification) {
+    print("Application will terminate, unfreezing all processes...")
+    cleanup()
+  }
+  
   // Setup notifications
   func setupNotifications() {
     let nc = NSWorkspace.shared.notificationCenter
@@ -158,4 +190,5 @@ NSApplication.shared.setActivationPolicy(.accessory)
 
 // Create and run the application
 let app = MacFreezeApp()
+NSApplication.shared.delegate = app
 NSApplication.shared.run()
