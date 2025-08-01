@@ -102,14 +102,14 @@ func createIcon(isEnabled: Bool = true) {
     context.setLineWidth(8)
     context.stroke(handleRect)
     
-    // Draw feet
+    // Draw feet at the bottom
     let footWidth = freezerWidth * 0.15
     let footHeight = CGFloat(Double(size) * 0.05)
-    let footSpacing = freezerWidth * 0.25
+    let footSpacing = freezerWidth * 0.4
     
-    for i in 0..<3 {
-        let footX = centerX - footSpacing + CGFloat(i) * footSpacing
-        let footY = centerY + freezerHeight/2 + footHeight/2
+    for i in 0..<2 {
+        let footX = centerX - footSpacing/2 + CGFloat(i) * footSpacing
+        let footY = centerY + freezerHeight/2 + lidHeight + footHeight/2
         
         let footRect = CGRect(
             x: footX - footWidth/2,
