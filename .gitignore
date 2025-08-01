@@ -2,13 +2,7 @@
 mac_freeze
 
 # Generated icon files
-icon.png
-icon_enabled.png
-icon_disabled.png
-freezer_original.png
-freezer_blue.png
 MacFreeze.icns
-MacFreeze.iconset/
 
 # macOS system files
 .DS_Store

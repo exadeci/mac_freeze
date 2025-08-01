@@ -36,16 +36,6 @@ $(APP_BUNDLE): $(TARGET) Info.plist
 	fi
 	@echo "App bundle created: $(APP_NAME)"
 
-# Generate icon
-icon: create_icon.swift
-	@echo "Generating icon..."
-	@swift create_icon.swift
-	@swift create_iconset.swift
-	@echo "Icon generation complete"
-
-# Build app with icon
-app-with-icon: icon app
-
 # Run the application
 run: build
 	./$(TARGET)
