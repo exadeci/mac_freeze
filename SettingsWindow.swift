@@ -51,12 +51,14 @@ class SettingsView: NSView {
     scrollView = NSScrollView(frame: NSRect(x: 20, y: 20, width: 360, height: 200))
     scrollView.hasVerticalScroller = true
     scrollView.autohidesScrollers = true
+    scrollView.borderType = .bezelBorder
     
     // Create stack view for app entries
     stackView = NSStackView()
     stackView.orientation = .vertical
-    stackView.spacing = 10
+    stackView.spacing = 8
     stackView.edgeInsets = NSEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+    stackView.translatesAutoresizingMaskIntoConstraints = false
     
     // Add app entries
     loadAppEntries()
@@ -68,6 +70,7 @@ class SettingsView: NSView {
     let buttonStack = NSStackView()
     buttonStack.orientation = .horizontal
     buttonStack.spacing = 10
+    buttonStack.translatesAutoresizingMaskIntoConstraints = false
     
     let addButton = NSButton(title: "Add App", target: self, action: #selector(addApp))
     let saveButton = NSButton(title: "Save", target: self, action: #selector(saveSettings))
@@ -77,8 +80,15 @@ class SettingsView: NSView {
     buttonStack.addArrangedSubview(saveButton)
     buttonStack.addArrangedSubview(cancelButton)
     
-    buttonStack.frame = NSRect(x: 20, y: 240, width: 360, height: 30)
     addSubview(buttonStack)
+    
+    // Set up constraints
+    NSLayoutConstraint.activate([
+      buttonStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+      buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+      buttonStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20),
+      buttonStack.heightAnchor.constraint(equalToConstant: 30)
+    ])
   }
   
   private func loadAppEntries() {
@@ -172,7 +182,8 @@ class AppEntryView: NSView {
   private func setupUI() {
     let stackView = NSStackView()
     stackView.orientation = .horizontal
-    stackView.spacing = 10
+    stackView.spacing = 8
+    stackView.translatesAutoresizingMaskIntoConstraints = false
     
     // Type selector
     typePopUp = NSPopUpButton()
@@ -181,6 +192,7 @@ class AppEntryView: NSView {
     typePopUp.selectItem(withTitle: type == "bundleID" ? "Bundle ID" : "Glob Pattern")
     typePopUp.target = self
     typePopUp.action = #selector(typeChanged)
+    typePopUp.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     
     // Identifier field
     identifierField = NSTextField()
@@ -188,6 +200,11 @@ class AppEntryView: NSView {
     identifierField.placeholderString = type == "bundleID" ? "com.example.app" : "app.*"
     identifierField.target = self
     identifierField.action = #selector(identifierChanged)
+    identifierField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    
+    // Delay label
+    let delayLabel = NSView.label(text: "Delay:")
+    delayLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     
     // Delay field
     delayField = NSTextField()
@@ -195,21 +212,31 @@ class AppEntryView: NSView {
     delayField.placeholderString = "30"
     delayField.target = self
     delayField.action = #selector(delayChanged)
+    delayField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+    delayField.preferredMaxLayoutWidth = 60
     
     // Remove button
     let removeButton = NSButton(title: "×", target: self, action: #selector(remove))
     removeButton.bezelStyle = .circular
     removeButton.font = NSFont.systemFont(ofSize: 16, weight: .bold)
+    removeButton.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     
     stackView.addArrangedSubview(typePopUp)
     stackView.addArrangedSubview(identifierField)
-    stackView.addArrangedSubview(NSView.label(text: "Delay (seconds):"))
+    stackView.addArrangedSubview(delayLabel)
     stackView.addArrangedSubview(delayField)
     stackView.addArrangedSubview(removeButton)
     
     addSubview(stackView)
-    stackView.frame = bounds
-    stackView.autoresizingMask = [.width, .height]
+    
+    // Set up constraints
+    NSLayoutConstraint.activate([
+      stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+      stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+      stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
+      stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
+      heightAnchor.constraint(equalToConstant: 35)
+    ])
   }
   
   @objc private func typeChanged() {
