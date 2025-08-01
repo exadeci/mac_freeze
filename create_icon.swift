@@ -23,8 +23,23 @@ func createIcon(isEnabled: Bool = true) {
     let freezerWidth = CGFloat(Double(size) * 0.6)
     let freezerHeight = CGFloat(Double(size) * 0.5)
     let lidHeight = CGFloat(Double(size) * 0.15)
+    let cornerRadius = CGFloat(Double(size) * 0.03)
     
-    // Draw freezer body
+    // Choose colors based on enabled state
+    let bodyColor: CGColor
+    let borderColor: CGColor
+    
+    if isEnabled {
+        // Blue when enabled
+        bodyColor = CGColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0)
+        borderColor = CGColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0)
+    } else {
+        // White when disabled
+        bodyColor = CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        borderColor = CGColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0)
+    }
+    
+    // Draw freezer body with rounded corners
     let bodyRect = CGRect(
         x: centerX - freezerWidth/2,
         y: centerY - freezerHeight/2,
@@ -32,46 +47,41 @@ func createIcon(isEnabled: Bool = true) {
         height: freezerHeight
     )
     
-    // Freezer body (white)
-    context.setFillColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
-    context.fill(bodyRect)
+    // Create rounded rectangle path for body
+    let bodyPath = CGPath(roundedRect: bodyRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
     
-    // Freezer border (silver)
-    context.setStrokeColor(CGColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0))
-    context.setLineWidth(8)
-    context.stroke(bodyRect)
+    // Freezer body fill
+    context.setFillColor(bodyColor)
+    context.addPath(bodyPath)
+    context.fillPath()
     
-    // Draw lid
-    let lidRect: CGRect
-    if isEnabled {
-        // Closed lid
-        lidRect = CGRect(
-            x: centerX - freezerWidth/2,
-            y: centerY + freezerHeight/2 - lidHeight,
-            width: freezerWidth,
-            height: lidHeight
-        )
-    } else {
-        // Open lid (angled)
-        let lidAngle: CGFloat = .pi / 6 // 30 degrees
-        let lidOffset = lidHeight * sin(lidAngle)
-        
-        lidRect = CGRect(
-            x: centerX - freezerWidth/2,
-            y: centerY + freezerHeight/2 - lidHeight + lidOffset,
-            width: freezerWidth,
-            height: lidHeight
-        )
-    }
+    // Freezer border (thicker)
+    context.setStrokeColor(borderColor)
+    context.setLineWidth(16)
+    context.addPath(bodyPath)
+    context.strokePath()
     
-    // Lid fill (white)
-    context.setFillColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
-    context.fill(lidRect)
+    // Draw lid with rounded corners
+    let lidRect = CGRect(
+        x: centerX - freezerWidth/2,
+        y: centerY + freezerHeight/2 - lidHeight,
+        width: freezerWidth,
+        height: lidHeight
+    )
     
-    // Lid border (silver)
-    context.setStrokeColor(CGColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0))
-    context.setLineWidth(8)
-    context.stroke(lidRect)
+    // Create rounded rectangle path for lid
+    let lidPath = CGPath(roundedRect: lidRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+    
+    // Lid fill
+    context.setFillColor(bodyColor)
+    context.addPath(lidPath)
+    context.fillPath()
+    
+    // Lid border (thicker)
+    context.setStrokeColor(borderColor)
+    context.setLineWidth(16)
+    context.addPath(lidPath)
+    context.strokePath()
     
     // Draw handle
     let handleWidth = freezerWidth * 0.3
@@ -89,14 +99,40 @@ func createIcon(isEnabled: Bool = true) {
     
     // Handle border
     context.setStrokeColor(CGColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0))
-    context.setLineWidth(4)
+    context.setLineWidth(8)
     context.stroke(handleRect)
+    
+    // Draw feet
+    let footWidth = freezerWidth * 0.15
+    let footHeight = CGFloat(Double(size) * 0.05)
+    let footSpacing = freezerWidth * 0.25
+    
+    for i in 0..<3 {
+        let footX = centerX - footSpacing + CGFloat(i) * footSpacing
+        let footY = centerY + freezerHeight/2 + footHeight/2
+        
+        let footRect = CGRect(
+            x: footX - footWidth/2,
+            y: footY - footHeight/2,
+            width: footWidth,
+            height: footHeight
+        )
+        
+        // Foot (dark gray)
+        context.setFillColor(CGColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0))
+        context.fill(footRect)
+        
+        // Foot border
+        context.setStrokeColor(CGColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0))
+        context.setLineWidth(6)
+        context.stroke(footRect)
+    }
     
     // Add some frost/ice effect when enabled
     if isEnabled {
         // Draw frost pattern
-        context.setStrokeColor(CGColor(red: 0.9, green: 0.95, blue: 1.0, alpha: 0.8))
-        context.setLineWidth(3)
+        context.setStrokeColor(CGColor(red: 0.9, green: 0.95, blue: 1.0, alpha: 0.9))
+        context.setLineWidth(6)
         
         for i in 0..<5 {
             let y = bodyRect.minY + bodyRect.height * 0.2 + CGFloat(i) * bodyRect.height * 0.15
