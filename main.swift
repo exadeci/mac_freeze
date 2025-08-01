@@ -102,13 +102,14 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Update status bar appearance
   func updateStatusBar() {
     if let statusItem = statusItem {
-      // Use custom icons from icons/ directory, otherwise fall back to emoji
-      if let enabledImage = NSImage(contentsOfFile: "icons/freezer_enabled.png"),
-         let disabledImage = NSImage(contentsOfFile: "icons/freezer_disabled.png") {
+      // Use custom icons from icons/ directory
+      let enabledPath = FileManager.default.currentDirectoryPath + "/icons/freezer_enabled.png"
+      let disabledPath = FileManager.default.currentDirectoryPath + "/icons/freezer_disabled.png"
+      
+      if let enabledImage = NSImage(contentsOfFile: enabledPath),
+         let disabledImage = NSImage(contentsOfFile: disabledPath) {
         statusItem.button?.image = isEnabled ? enabledImage : disabledImage
         statusItem.button?.title = ""
-      } else {
-        statusItem.button?.title = isEnabled ? "❄️" : "☀️"
       }
       statusItem.menu = createStatusBarMenu()
     }
@@ -117,12 +118,11 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Setup status bar
   func setupStatusBar() {
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    // Use custom icon from icons/ directory, otherwise fall back to emoji
-    if let enabledImage = NSImage(contentsOfFile: "icons/freezer_enabled.png") {
+    // Use custom icon from icons/ directory
+    let enabledPath = FileManager.default.currentDirectoryPath + "/icons/freezer_enabled.png"
+    if let enabledImage = NSImage(contentsOfFile: enabledPath) {
       statusItem?.button?.image = enabledImage
       statusItem?.button?.title = ""
-    } else {
-      statusItem?.button?.title = "❄️"
     }
     statusItem?.menu = createStatusBarMenu()
   }
