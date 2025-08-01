@@ -103,8 +103,10 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   func updateStatusBar() {
     if let statusItem = statusItem {
       // Use custom icons from icons/ directory
-      let enabledPath = FileManager.default.currentDirectoryPath + "/icons/freezer_enabled.png"
-      let disabledPath = FileManager.default.currentDirectoryPath + "/icons/freezer_disabled.png"
+      let enabledPath = Bundle.main.path(forResource: "freezer_enabled", ofType: "png", inDirectory: "icons") ?? 
+                       FileManager.default.currentDirectoryPath + "/icons/freezer_enabled.png"
+      let disabledPath = Bundle.main.path(forResource: "freezer_disabled", ofType: "png", inDirectory: "icons") ?? 
+                        FileManager.default.currentDirectoryPath + "/icons/freezer_disabled.png"
       
       if let enabledImage = NSImage(contentsOfFile: enabledPath),
          let disabledImage = NSImage(contentsOfFile: disabledPath) {
@@ -119,7 +121,8 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   func setupStatusBar() {
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     // Use custom icon from icons/ directory
-    let enabledPath = FileManager.default.currentDirectoryPath + "/icons/freezer_enabled.png"
+    let enabledPath = Bundle.main.path(forResource: "freezer_enabled", ofType: "png", inDirectory: "icons") ?? 
+                     FileManager.default.currentDirectoryPath + "/icons/freezer_enabled.png"
     if let enabledImage = NSImage(contentsOfFile: enabledPath) {
       statusItem?.button?.image = enabledImage
       statusItem?.button?.title = ""

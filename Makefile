@@ -28,11 +28,16 @@ $(APP_BUNDLE): $(TARGET) Info.plist
 	@echo "Creating app bundle..."
 	@mkdir -p $(APP_NAME)/Contents/MacOS
 	@mkdir -p $(APP_NAME)/Contents/Resources
+	@mkdir -p $(APP_NAME)/Contents/Resources/icons
 	@cp $(TARGET) $(APP_BUNDLE)
 	@cp Info.plist $(APP_NAME)/Contents/
 	@if [ -f MacFreeze.icns ]; then \
 		cp MacFreeze.icns $(APP_NAME)/Contents/Resources/; \
 		echo "Icon added to app bundle"; \
+	fi
+	@if [ -d icons ]; then \
+		cp -r icons $(APP_NAME)/Contents/Resources/; \
+		echo "Status bar icons added to app bundle"; \
 	fi
 	@echo "App bundle created: $(APP_NAME)"
 
