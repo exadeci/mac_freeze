@@ -5,9 +5,9 @@ import CoreGraphics
 let iconSizes = [16, 32, 64, 128, 256, 512, 1024]
 
 func createIconSet() {
-    // Load the base icon
-    guard let baseImage = NSImage(contentsOfFile: "icon.png") else {
-        print("Error: Could not load icon.png")
+    // Load the base icon (use enabled version for app icon)
+    guard let baseImage = NSImage(contentsOfFile: "icon_enabled.png") else {
+        print("Error: Could not load icon_enabled.png")
         return
     }
     

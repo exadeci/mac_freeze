@@ -1,8 +1,8 @@
 import Cocoa
 import CoreGraphics
 
-// Create a simple snowflake icon
-func createIcon() {
+// Create a chest freezer icon
+func createIcon(isEnabled: Bool = true) {
     let size = 1024
     let context = CGContext(
         data: nil,
@@ -15,64 +15,112 @@ func createIcon() {
     )!
     
     // Set background
-    context.setFillColor(CGColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0))
+    context.setFillColor(CGColor(red: 0.95, green: 0.95, blue: 0.95, alpha: 1.0))
     context.fill(CGRect(x: 0, y: 0, width: size, height: size))
     
-    // Draw snowflake
-    context.setStrokeColor(CGColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0))
+    let centerX = CGFloat(size/2)
+    let centerY = CGFloat(size/2)
+    let freezerWidth = CGFloat(Double(size) * 0.6)
+    let freezerHeight = CGFloat(Double(size) * 0.5)
+    let lidHeight = CGFloat(Double(size) * 0.15)
+    
+    // Draw freezer body
+    let bodyRect = CGRect(
+        x: centerX - freezerWidth/2,
+        y: centerY - freezerHeight/2,
+        width: freezerWidth,
+        height: freezerHeight
+    )
+    
+    // Freezer body (white)
+    context.setFillColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
+    context.fill(bodyRect)
+    
+    // Freezer border (silver)
+    context.setStrokeColor(CGColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0))
     context.setLineWidth(8)
+    context.stroke(bodyRect)
     
-    let center = CGPoint(x: size/2, y: size/2)
-    let radius = CGFloat(size/3)
-    
-    // Draw main snowflake structure
-    for i in 0..<6 {
-        let angle = CGFloat(i) * .pi / 3
-        let endPoint = CGPoint(
-            x: center.x + cos(angle) * radius,
-            y: center.y + sin(angle) * radius
+    // Draw lid
+    let lidRect: CGRect
+    if isEnabled {
+        // Closed lid
+        lidRect = CGRect(
+            x: centerX - freezerWidth/2,
+            y: centerY + freezerHeight/2 - lidHeight,
+            width: freezerWidth,
+            height: lidHeight
         )
+    } else {
+        // Open lid (angled)
+        let lidAngle: CGFloat = .pi / 6 // 30 degrees
+        let lidOffset = lidHeight * sin(lidAngle)
         
-        context.move(to: center)
-        context.addLine(to: endPoint)
-        
-        // Add smaller branches
-        let branchLength = radius * 0.4
-        let branchPoint = CGPoint(
-            x: center.x + cos(angle) * branchLength,
-            y: center.y + sin(angle) * branchLength
+        lidRect = CGRect(
+            x: centerX - freezerWidth/2,
+            y: centerY + freezerHeight/2 - lidHeight + lidOffset,
+            width: freezerWidth,
+            height: lidHeight
         )
-        
-        let perpAngle1 = angle + .pi/2
-        let perpAngle2 = angle - .pi/2
-        
-        let branch1 = CGPoint(
-            x: branchPoint.x + cos(perpAngle1) * branchLength * 0.3,
-            y: branchPoint.y + sin(perpAngle1) * branchLength * 0.3
-        )
-        
-        let branch2 = CGPoint(
-            x: branchPoint.x + cos(perpAngle2) * branchLength * 0.3,
-            y: branchPoint.y + sin(perpAngle2) * branchLength * 0.3
-        )
-        
-        context.move(to: branchPoint)
-        context.addLine(to: branch1)
-        context.move(to: branchPoint)
-        context.addLine(to: branch2)
     }
     
-    context.strokePath()
+    // Lid fill (white)
+    context.setFillColor(CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0))
+    context.fill(lidRect)
+    
+    // Lid border (silver)
+    context.setStrokeColor(CGColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0))
+    context.setLineWidth(8)
+    context.stroke(lidRect)
+    
+    // Draw handle
+    let handleWidth = freezerWidth * 0.3
+    let handleHeight = lidHeight * 0.3
+    let handleRect = CGRect(
+        x: centerX - handleWidth/2,
+        y: lidRect.midY - handleHeight/2,
+        width: handleWidth,
+        height: handleHeight
+    )
+    
+    // Handle (dark gray)
+    context.setFillColor(CGColor(red: 0.4, green: 0.4, blue: 0.4, alpha: 1.0))
+    context.fill(handleRect)
+    
+    // Handle border
+    context.setStrokeColor(CGColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0))
+    context.setLineWidth(4)
+    context.stroke(handleRect)
+    
+    // Add some frost/ice effect when enabled
+    if isEnabled {
+        // Draw frost pattern
+        context.setStrokeColor(CGColor(red: 0.9, green: 0.95, blue: 1.0, alpha: 0.8))
+        context.setLineWidth(3)
+        
+        for i in 0..<5 {
+            let y = bodyRect.minY + bodyRect.height * 0.2 + CGFloat(i) * bodyRect.height * 0.15
+            let startX = bodyRect.minX + bodyRect.width * 0.1
+            let endX = bodyRect.maxX - bodyRect.width * 0.1
+            
+            context.move(to: CGPoint(x: startX, y: y))
+            context.addLine(to: CGPoint(x: endX, y: y))
+        }
+        context.strokePath()
+    }
     
     // Save the image
     if let image = context.makeImage() {
         let bitmap = NSBitmapImageRep(cgImage: image)
         if let data = bitmap.representation(using: .png, properties: [:]) {
-            let url = URL(fileURLWithPath: "icon.png")
+            let filename = isEnabled ? "icon_enabled.png" : "icon_disabled.png"
+            let url = URL(fileURLWithPath: filename)
             try? data.write(to: url)
-            print("Icon saved as icon.png")
+            print("Icon saved as \(filename)")
         }
     }
 }
 
-createIcon() 
+// Create both enabled and disabled icons
+createIcon(isEnabled: true)
+createIcon(isEnabled: false) 

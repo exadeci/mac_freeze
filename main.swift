@@ -102,7 +102,14 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Update status bar appearance
   func updateStatusBar() {
     if let statusItem = statusItem {
-      statusItem.button?.title = isEnabled ? "❄️" : "☀️"
+      // Use custom icons if available, otherwise fall back to emoji
+      if let enabledImage = NSImage(contentsOfFile: "icon_enabled.png"),
+         let disabledImage = NSImage(contentsOfFile: "icon_disabled.png") {
+        statusItem.button?.image = isEnabled ? enabledImage : disabledImage
+        statusItem.button?.title = ""
+      } else {
+        statusItem.button?.title = isEnabled ? "❄️" : "☀️"
+      }
       statusItem.menu = createStatusBarMenu()
     }
   }
@@ -110,7 +117,13 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Setup status bar
   func setupStatusBar() {
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    statusItem?.button?.title = "❄️"
+    // Use custom icon if available, otherwise fall back to emoji
+    if let enabledImage = NSImage(contentsOfFile: "icon_enabled.png") {
+      statusItem?.button?.image = enabledImage
+      statusItem?.button?.title = ""
+    } else {
+      statusItem?.button?.title = "❄️"
+    }
     statusItem?.menu = createStatusBarMenu()
   }
   
