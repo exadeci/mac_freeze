@@ -153,6 +153,9 @@ class MacFreezeApp: NSObject {
   }
 }
 
+// Initialize the application
+NSApplication.shared.setActivationPolicy(.accessory)
+
 // Create and run the application
 let app = MacFreezeApp()
 NSApplication.shared.run()
