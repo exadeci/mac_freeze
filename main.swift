@@ -30,7 +30,7 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
     setupSignalHandlers()
   }
   
-  // Load JSON blacklist → [bundleID: delaySeconds]
+  // Load JSON blacklist → [pattern: delaySeconds]
   func loadConfiguration() {
     print("Loading configuration...")
     let url = FileManager.default.homeDirectoryForCurrentUser
@@ -46,18 +46,11 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
       print("Found \(list.count) blacklist entries")
       
       for e in list {
-        let type = e["type"] as! String
+        let pattern = e["pattern"] as! String
         let delay = (e["delay"] as? TimeInterval) ?? 30
         
-        if type == "bundleID" {
-          let id = e["identifier"] as! String
-          delays[id] = delay
-          print("Added bundleID: \(id) with delay: \(delay)")
-        } else if type == "glob" {
-          let pattern = e["pattern"] as! String
-          delays[pattern] = delay
-          print("Added glob pattern: \(pattern) with delay: \(delay)")
-        }
+        delays[pattern] = delay
+        print("Added glob pattern: \(pattern) with delay: \(delay)")
       }
       print("Configuration loaded successfully")
     } catch {
@@ -197,6 +190,22 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
     unfreezeAllProcesses()
   }
   
+  // Check if app name matches glob pattern
+  private func matchesGlobPattern(_ appName: String, pattern: String) -> Bool {
+    // Simple glob pattern matching
+    let regexPattern = pattern.replacingOccurrences(of: ".", with: "\\.")
+                           .replacingOccurrences(of: "*", with: ".*")
+    
+    do {
+      let regex = try NSRegularExpression(pattern: regexPattern, options: .caseInsensitive)
+      let range = NSRange(location: 0, length: appName.utf16.count)
+      return regex.firstMatch(in: appName, options: [], range: range) != nil
+    } catch {
+      print("Invalid regex pattern: \(pattern)")
+      return false
+    }
+  }
+  
   // NSApplicationDelegate method for graceful termination
   func applicationWillTerminate(_ notification: Notification) {
     print("Application will terminate, unfreezing all processes...")
@@ -232,14 +241,24 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
                    object: nil, queue: .main) { [weak self] note in
       guard let self = self,
             let info = note.userInfo,
-            let app = info[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-            let bid = app.bundleIdentifier,
-            let delay = self.delays[bid] else { return }
+            let app = info[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
 
       // Only freeze if enabled
       guard self.isEnabled else { return }
 
       let pid = app.processIdentifier
+      let appName = app.localizedName ?? ""
+
+      // Check if any glob pattern matches the app name
+      var matchingDelay: TimeInterval?
+      for (pattern, delay) in self.delays {
+        if self.matchesGlobPattern(appName, pattern: pattern) {
+          matchingDelay = delay
+          break
+        }
+      }
+
+      guard let delay = matchingDelay else { return }
 
       // Schedule freeze after `delay`
       let work = DispatchWorkItem {

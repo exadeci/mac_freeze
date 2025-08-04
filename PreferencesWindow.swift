@@ -4,7 +4,7 @@ class PreferencesWindow: NSWindow {
   static var shared: PreferencesWindow?
   
   init() {
-    super.init(contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+    super.init(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
                styleMask: [.titled, .closable, .miniaturizable],
                backing: .buffered,
                defer: false)
@@ -103,11 +103,10 @@ class PreferencesView: NSView {
        let blacklist = json["blacklist"] as? [[String: Any]] {
       
       for entry in blacklist {
-        let type = entry["type"] as? String ?? ""
-        let identifier = entry["identifier"] as? String ?? entry["pattern"] as? String ?? ""
+        let pattern = entry["pattern"] as? String ?? ""
         let delay = entry["delay"] as? TimeInterval ?? 30
         
-        let appEntry = AppEntryView(type: type, identifier: identifier, delay: delay)
+        let appEntry = AppEntryView(type: "glob", identifier: pattern, delay: delay)
         appEntry.onRemove = { [weak self] in
           if let index = self?.appEntries.firstIndex(of: appEntry) {
             self?.appEntries.remove(at: index)
@@ -120,7 +119,7 @@ class PreferencesView: NSView {
   }
   
   @objc private func addApp() {
-    let appEntry = AppEntryView(type: "bundleID", identifier: "", delay: 30)
+    let appEntry = AppEntryView(type: "glob", identifier: "", delay: 30)
     appEntry.onRemove = { [weak self] in
       if let index = self?.appEntries.firstIndex(of: appEntry) {
         self?.appEntries.remove(at: index)
@@ -135,16 +134,11 @@ class PreferencesView: NSView {
     
     for entry in appEntries {
       if !entry.appIdentifier.isEmpty {
-        var dict: [String: Any] = [
-          "type": entry.type,
+        let dict: [String: Any] = [
+          "type": "glob",
+          "pattern": entry.appIdentifier,
           "delay": entry.delay
         ]
-        
-        if entry.type == "bundleID" {
-          dict["identifier"] = entry.appIdentifier
-        } else {
-          dict["pattern"] = entry.appIdentifier
-        }
         
         blacklist.append(dict)
       }
@@ -200,22 +194,20 @@ class AppEntryView: NSView {
     stackView.spacing = 10
     stackView.translatesAutoresizingMaskIntoConstraints = false
     
-    // Type selector
-    typePopUp = NSPopUpButton()
-    typePopUp.addItem(withTitle: "Bundle ID")
-    typePopUp.addItem(withTitle: "Glob Pattern")
-    typePopUp.selectItem(withTitle: type == "bundleID" ? "Bundle ID" : "Glob Pattern")
-    typePopUp.target = self
-    typePopUp.action = #selector(typeChanged)
-    typePopUp.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    
-    // Identifier field
+    // Pattern field
     identifierField = NSTextField()
     identifierField.stringValue = appIdentifier
-    identifierField.placeholderString = type == "bundleID" ? "com.example.app" : "app.*"
+    identifierField.placeholderString = "app.*"
     identifierField.target = self
     identifierField.action = #selector(identifierChanged)
-    identifierField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    identifierField.translatesAutoresizingMaskIntoConstraints = false
+    
+    // Style the text field
+    identifierField.backgroundColor = NSColor.controlBackgroundColor
+    identifierField.drawsBackground = true
+    identifierField.bezelStyle = .roundedBezel
+    identifierField.font = NSFont.systemFont(ofSize: 13)
+    identifierField.textColor = NSColor.labelColor
     
     // Delay field
     delayField = NSTextField()
@@ -223,35 +215,50 @@ class AppEntryView: NSView {
     delayField.placeholderString = "30"
     delayField.target = self
     delayField.action = #selector(delayChanged)
-    delayField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    delayField.preferredMaxLayoutWidth = 60
+    delayField.translatesAutoresizingMaskIntoConstraints = false
+    
+    // Style the delay field and make it number-only
+    delayField.backgroundColor = NSColor.controlBackgroundColor
+    delayField.drawsBackground = true
+    delayField.bezelStyle = .roundedBezel
+    delayField.font = NSFont.systemFont(ofSize: 13)
+    delayField.textColor = NSColor.labelColor
+    delayField.cell?.formatter = NumberFormatter()
     
     // Remove button
     let removeButton = NSButton(title: "×", target: self, action: #selector(remove))
     removeButton.bezelStyle = .circular
     removeButton.font = NSFont.systemFont(ofSize: 16, weight: .bold)
-    removeButton.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     
-    stackView.addArrangedSubview(typePopUp)
     stackView.addArrangedSubview(identifierField)
     stackView.addArrangedSubview(delayField)
     stackView.addArrangedSubview(removeButton)
     
     addSubview(stackView)
     
+    // Set explicit width constraints
     NSLayoutConstraint.activate([
       stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
       stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
       stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
       stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
-      heightAnchor.constraint(equalToConstant: 30)
+      heightAnchor.constraint(equalToConstant: 30),
+      
+      // Fixed widths for delay field and remove button
+      delayField.widthAnchor.constraint(equalToConstant: 80),
+      removeButton.widthAnchor.constraint(equalToConstant: 30),
+      
+      // Identifier field constraints - ensure it's visible with minimum width
+      identifierField.heightAnchor.constraint(equalToConstant: 24),
+      identifierField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200)
     ])
+    
+    // Set content hugging and compression resistance priorities
+    identifierField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    identifierField.setContentCompressionResistancePriority(.required, for: .horizontal)
   }
   
-  @objc private func typeChanged() {
-    type = typePopUp.selectedItem?.title == "Bundle ID" ? "bundleID" : "glob"
-    identifierField.placeholderString = type == "bundleID" ? "com.example.app" : "app.*"
-  }
+
   
   @objc private func identifierChanged() {
     appIdentifier = identifierField.stringValue
