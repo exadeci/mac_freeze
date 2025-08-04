@@ -132,50 +132,15 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
     unfreezeAllProcesses()
   }
   
-  // Open settings window
+  // Open preferences window
   @objc func openSettings() {
-    print("Opening settings...")
+    print("Opening preferences...")
     
-    // Try to find SettingsApp in the app bundle first
-    var settingsAppPath = Bundle.main.path(forResource: "SettingsApp", ofType: nil)
-    print("SettingsApp path from bundle: \(settingsAppPath ?? "nil")")
-    
-    if settingsAppPath == nil {
-      // Try the MacOS directory in the app bundle
-      settingsAppPath = Bundle.main.bundlePath + "/Contents/MacOS/SettingsApp"
-      print("SettingsApp path from MacOS directory: \(settingsAppPath ?? "nil")")
+    if PreferencesWindow.shared == nil {
+      PreferencesWindow.shared = PreferencesWindow()
     }
     
-    if settingsAppPath == nil {
-      // Fallback to current directory
-      settingsAppPath = FileManager.default.currentDirectoryPath + "/SettingsApp"
-      print("SettingsApp path from current directory: \(settingsAppPath ?? "nil")")
-    }
-    
-    if let path = settingsAppPath {
-      let task = Process()
-      task.launchPath = path
-      
-      // Add error handling
-      let pipe = Pipe()
-      task.standardError = pipe
-      
-      do {
-        print("Launching SettingsApp at: \(path)")
-        try task.run()
-        print("SettingsApp launched successfully")
-      } catch {
-        print("Error launching SettingsApp: \(error)")
-        
-        // Try to read error output
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        if let errorOutput = String(data: data, encoding: .utf8) {
-          print("SettingsApp error output: \(errorOutput)")
-        }
-      }
-    } else {
-      print("Could not find SettingsApp executable")
-    }
+    PreferencesWindow.shared?.showWindow(nil)
   }
   
   // Update status bar appearance
@@ -223,10 +188,7 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
       exit(0)
     }
     
-    signal(SIGUSR1) { _ in
-      print("Received SIGUSR1, reloading configuration...")
-      MacFreezeApp.shared?.loadConfiguration()
-    }
+
   }
   
   // Cleanup function to unfreeze all processes

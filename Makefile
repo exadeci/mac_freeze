@@ -10,31 +10,26 @@ APP_NAME = MacFreeze.app
 APP_BUNDLE = $(APP_NAME)/Contents/MacOS/$(TARGET)
 
 # Source files
-SOURCES = main.swift
-SETTINGS_SOURCES = SettingsApp.swift
+SOURCES = main.swift PreferencesWindow.swift
 
 # Default target
 all: build
 
 # Build the executable
-build: $(TARGET) SettingsApp
+build: $(TARGET)
 
 $(TARGET): $(SOURCES)
 	$(SWIFTC) $(SWIFT_FLAGS) -o $(TARGET) $(SOURCES)
 
-SettingsApp: $(SETTINGS_SOURCES)
-	$(SWIFTC) $(SWIFT_FLAGS) -o SettingsApp $(SETTINGS_SOURCES)
-
 # Build the app bundle
 app: $(APP_BUNDLE)
 
-$(APP_BUNDLE): $(TARGET) SettingsApp Info.plist
+$(APP_BUNDLE): $(TARGET) Info.plist
 	@echo "Creating app bundle..."
 	@mkdir -p $(APP_NAME)/Contents/MacOS
 	@mkdir -p $(APP_NAME)/Contents/Resources
 	@mkdir -p $(APP_NAME)/Contents/Resources/icons
 	@cp $(TARGET) $(APP_BUNDLE)
-	@cp SettingsApp $(APP_NAME)/Contents/MacOS/
 	@cp Info.plist $(APP_NAME)/Contents/
 	@if [ -f MacFreeze.icns ]; then \
 		cp MacFreeze.icns $(APP_NAME)/Contents/Resources/; \
@@ -57,7 +52,6 @@ run-app: app
 # Clean build artifacts
 clean:
 	rm -f $(TARGET)
-	rm -f SettingsApp
 	rm -rf $(APP_NAME)
 
 # Install executable to user's home directory

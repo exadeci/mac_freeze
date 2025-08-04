@@ -1,89 +1,37 @@
 import Cocoa
 
-class SettingsApp: NSObject, NSApplicationDelegate {
-  var settingsWindow: SettingsWindow?
+class PreferencesWindow: NSWindow {
+  static var shared: PreferencesWindow?
   
-  override init() {
-    super.init()
-  }
-  
-  func applicationDidFinishLaunching(_ notification: Notification) {
-    settingsWindow = SettingsWindow()
-    settingsWindow?.showWindow(nil)
-  }
-  
-  func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-    return true
-  }
-}
-
-class SettingsWindow: NSWindow {
   init() {
     super.init(contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
                styleMask: [.titled, .closable, .miniaturizable],
                backing: .buffered,
                defer: false)
     
-    self.title = "Mac Freeze Settings"
+    self.title = "Mac Freeze Preferences"
     self.center()
     self.delegate = self
+    self.isReleasedWhenClosed = false // Keep window alive
     
-    let settingsView = SettingsView()
-    self.contentView = settingsView
+    let preferencesView = PreferencesView()
+    self.contentView = preferencesView
   }
   
   func showWindow(_ sender: Any?) {
     self.makeKeyAndOrderFront(sender)
+    NSApp.activate(ignoringOtherApps: true)
   }
 }
 
-extension SettingsWindow: NSWindowDelegate {
+extension PreferencesWindow: NSWindowDelegate {
   func windowWillClose(_ notification: Notification) {
-    // Notify the main app to reload configuration
-    notifyMainAppToReload()
-  }
-  
-  private func notifyMainAppToReload() {
-    // Send a signal to the main app process
-    let mainAppPID = getMainAppPID()
-    if mainAppPID > 0 {
-      kill(mainAppPID, SIGUSR1)
-    }
-  }
-  
-  private func getMainAppPID() -> pid_t {
-    // Look for the main MacFreeze app process
-    let task = Process()
-    task.launchPath = "/bin/ps"
-    task.arguments = ["-ax", "-o", "pid,command"]
-    
-    let pipe = Pipe()
-    task.standardOutput = pipe
-    
-    do {
-      try task.run()
-      task.waitUntilExit()
-      
-      let data = pipe.fileHandleForReading.readDataToEndOfFile()
-      let output = String(data: data, encoding: .utf8) ?? ""
-      
-      for line in output.components(separatedBy: .newlines) {
-        if line.contains("mac_freeze") && !line.contains("SettingsApp") {
-          let components = line.trimmingCharacters(in: .whitespaces).components(separatedBy: " ")
-          if let pidString = components.first, let pid = Int32(pidString) {
-            return pid
-          }
-        }
-      }
-    } catch {
-      print("Error finding main app PID: \(error)")
-    }
-    
-    return -1
+    // Don't terminate the app, just hide the window
+    NSApp.hide(nil)
   }
 }
 
-class SettingsView: NSView {
+class PreferencesView: NSView {
   private var appEntries: [AppEntryView] = []
   private var scrollView: NSScrollView!
   private var stackView: NSStackView!
@@ -207,6 +155,10 @@ class SettingsView: NSView {
     if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
       let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("blacklist.json")
       try? data.write(to: url)
+      
+      // Reload configuration in main app
+      MacFreezeApp.shared?.loadConfiguration()
+      
       self.window?.close()
     }
   }
@@ -313,9 +265,4 @@ class AppEntryView: NSView {
     onRemove?()
     self.removeFromSuperview()
   }
-}
-
-// Run the settings app
-let app = SettingsApp()
-NSApplication.shared.delegate = app
-NSApplication.shared.run() 
+} 
