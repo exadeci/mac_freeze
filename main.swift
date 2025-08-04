@@ -34,7 +34,7 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   func loadConfiguration() {
     print("Loading configuration...")
     let url = FileManager.default.homeDirectoryForCurrentUser
-                   .appendingPathComponent("blacklist.json")
+                                            .appendingPathComponent(".macfreeze_blacklist.json")
     print("Config file path: \(url)")
     
     do {
@@ -80,21 +80,21 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
     
     menu.addItem(NSMenuItem.separator())
     
-    // Settings item
-    let settingsItem = NSMenuItem(title: "Settings", 
-                                 action: #selector(openSettings), 
-                                 keyEquivalent: "s")
-    settingsItem.target = self
-    menu.addItem(settingsItem)
-    
-    menu.addItem(NSMenuItem.separator())
-    
     // Unfreeze All item
     let unfreezeItem = NSMenuItem(title: "Unfreeze All Processes", 
                                  action: #selector(unfreezeAll), 
                                  keyEquivalent: "")
     unfreezeItem.target = self
     menu.addItem(unfreezeItem)
+    
+    menu.addItem(NSMenuItem.separator())
+
+    // Settings item
+    let settingsItem = NSMenuItem(title: "Settings", 
+                                 action: #selector(openSettings), 
+                                 keyEquivalent: "s")
+    settingsItem.target = self
+    menu.addItem(settingsItem)
     
     menu.addItem(NSMenuItem.separator())
     

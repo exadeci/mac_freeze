@@ -97,7 +97,7 @@ class PreferencesView: NSView {
   }
   
   private func loadAppEntries() {
-    let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("blacklist.json")
+    let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".macfreeze_blacklist.json")
     if let data = try? Data(contentsOf: url),
        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
        let blacklist = json["blacklist"] as? [[String: Any]] {
@@ -106,7 +106,7 @@ class PreferencesView: NSView {
         let pattern = entry["pattern"] as? String ?? ""
         let delay = entry["delay"] as? TimeInterval ?? 30
         
-        let appEntry = AppEntryView(type: "glob", identifier: pattern, delay: delay)
+        let appEntry = AppEntryView(identifier: pattern, delay: delay)
         appEntry.onRemove = { [weak self] in
           if let index = self?.appEntries.firstIndex(of: appEntry) {
             self?.appEntries.remove(at: index)
@@ -119,7 +119,7 @@ class PreferencesView: NSView {
   }
   
   @objc private func addApp() {
-    let appEntry = AppEntryView(type: "glob", identifier: "", delay: 30)
+    let appEntry = AppEntryView(identifier: "", delay: 30)
     appEntry.onRemove = { [weak self] in
       if let index = self?.appEntries.firstIndex(of: appEntry) {
         self?.appEntries.remove(at: index)
@@ -139,7 +139,6 @@ class PreferencesView: NSView {
       
       if !currentIdentifier.isEmpty {
         let dict: [String: Any] = [
-          "type": "glob",
           "pattern": currentIdentifier,
           "delay": currentDelay
         ]
@@ -151,7 +150,7 @@ class PreferencesView: NSView {
     let json: [String: Any] = ["blacklist": blacklist]
     
     if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
-      let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("blacklist.json")
+      let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".macfreeze_blacklist.json")
       
       do {
         try data.write(to: url)
@@ -172,17 +171,14 @@ class PreferencesView: NSView {
 }
 
 class AppEntryView: NSView {
-  var type: String
   var appIdentifier: String
   var delay: TimeInterval
   var onRemove: (() -> Void)?
   
-  private var typePopUp: NSPopUpButton!
   var identifierField: NSTextField!
   var delayField: NSTextField!
   
-  init(type: String, identifier: String, delay: TimeInterval) {
-    self.type = type
+  init(identifier: String, delay: TimeInterval) {
     self.appIdentifier = identifier
     self.delay = delay
     super.init(frame: NSRect.zero)
@@ -190,7 +186,6 @@ class AppEntryView: NSView {
   }
   
   required init?(coder: NSCoder) {
-    self.type = "bundleID"
     self.appIdentifier = ""
     self.delay = 30
     super.init(coder: coder)

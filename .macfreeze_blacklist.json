@@ -1,17 +1,14 @@
 {
   "blacklist": [
     {
-      "type": "glob",
       "pattern": "firefox.*",
       "delay": 30
     },
     {
-      "type": "glob",
       "pattern": "chrome.*",
       "delay": 30
     },
     {
-      "type": "glob",
       "pattern": "rekordbox.*",
       "delay": 60
     }
