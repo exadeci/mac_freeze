@@ -1,5 +1,16 @@
 import Cocoa
 
+extension NSApplication {
+  static func show(ignoringOtherApps: Bool = true) {
+    NSApp.setActivationPolicy(.regular)
+    NSApp.activate(ignoringOtherApps: ignoringOtherApps)
+  }
+  
+  static func hide() {
+    NSApp.setActivationPolicy(.accessory)
+  }
+}
+
 class MacFreezeApp: NSObject, NSApplicationDelegate {
   // Static reference for signal handlers
   static var shared: MacFreezeApp?
@@ -21,23 +32,36 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   
   // Load JSON blacklist → [bundleID: delaySeconds]
   func loadConfiguration() {
+    print("Loading configuration...")
     let url = FileManager.default.homeDirectoryForCurrentUser
                    .appendingPathComponent("blacklist.json")
-    let data = try! Data(contentsOf: url)
-    let raw = try! JSONSerialization.jsonObject(with: data) as! [String: Any]
-    let list = raw["blacklist"] as! [[String: Any]]
+    print("Config file path: \(url)")
     
-    for e in list {
-      let type = e["type"] as! String
-      let delay = (e["delay"] as? TimeInterval) ?? 30
+    do {
+      let data = try Data(contentsOf: url)
+      print("Config file found, size: \(data.count) bytes")
+      let raw = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+      let list = raw["blacklist"] as! [[String: Any]]
       
-      if type == "bundleID" {
-        let id = e["identifier"] as! String
-        delays[id] = delay
-      } else if type == "glob" {
-        let pattern = e["pattern"] as! String
-        delays[pattern] = delay
+      print("Found \(list.count) blacklist entries")
+      
+      for e in list {
+        let type = e["type"] as! String
+        let delay = (e["delay"] as? TimeInterval) ?? 30
+        
+        if type == "bundleID" {
+          let id = e["identifier"] as! String
+          delays[id] = delay
+          print("Added bundleID: \(id) with delay: \(delay)")
+        } else if type == "glob" {
+          let pattern = e["pattern"] as! String
+          delays[pattern] = delay
+          print("Added glob pattern: \(pattern) with delay: \(delay)")
+        }
       }
+      print("Configuration loaded successfully")
+    } catch {
+      print("Failed to load configuration: \(error)")
     }
   }
   
@@ -110,9 +134,48 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   
   // Open settings window
   @objc func openSettings() {
-    let settingsWindow = SettingsWindow()
-    settingsWindow.showWindow(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    print("Opening settings...")
+    
+    // Try to find SettingsApp in the app bundle first
+    var settingsAppPath = Bundle.main.path(forResource: "SettingsApp", ofType: nil)
+    print("SettingsApp path from bundle: \(settingsAppPath ?? "nil")")
+    
+    if settingsAppPath == nil {
+      // Try the MacOS directory in the app bundle
+      settingsAppPath = Bundle.main.bundlePath + "/Contents/MacOS/SettingsApp"
+      print("SettingsApp path from MacOS directory: \(settingsAppPath ?? "nil")")
+    }
+    
+    if settingsAppPath == nil {
+      // Fallback to current directory
+      settingsAppPath = FileManager.default.currentDirectoryPath + "/SettingsApp"
+      print("SettingsApp path from current directory: \(settingsAppPath ?? "nil")")
+    }
+    
+    if let path = settingsAppPath {
+      let task = Process()
+      task.launchPath = path
+      
+      // Add error handling
+      let pipe = Pipe()
+      task.standardError = pipe
+      
+      do {
+        print("Launching SettingsApp at: \(path)")
+        try task.run()
+        print("SettingsApp launched successfully")
+      } catch {
+        print("Error launching SettingsApp: \(error)")
+        
+        // Try to read error output
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if let errorOutput = String(data: data, encoding: .utf8) {
+          print("SettingsApp error output: \(errorOutput)")
+        }
+      }
+    } else {
+      print("Could not find SettingsApp executable")
+    }
   }
   
   // Update status bar appearance
@@ -159,6 +222,11 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
       MacFreezeApp.shared?.cleanup()
       exit(0)
     }
+    
+    signal(SIGUSR1) { _ in
+      print("Received SIGUSR1, reloading configuration...")
+      MacFreezeApp.shared?.loadConfiguration()
+    }
   }
   
   // Cleanup function to unfreeze all processes
@@ -171,6 +239,11 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
   func applicationWillTerminate(_ notification: Notification) {
     print("Application will terminate, unfreezing all processes...")
     cleanup()
+  }
+  
+  // Prevent app from terminating when no windows are visible
+  func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    return false
   }
   
   // Setup notifications

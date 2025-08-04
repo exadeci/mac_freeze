@@ -1,26 +1,32 @@
 import Cocoa
 
-extension NSView {
-  static func label(text: String) -> NSTextField {
-    let label = NSTextField()
-    label.stringValue = text
-    label.isEditable = false
-    label.isBordered = false
-    label.backgroundColor = NSColor.clear
-    label.textColor = NSColor.labelColor
-    return label
+class SettingsApp: NSObject, NSApplicationDelegate {
+  var settingsWindow: SettingsWindow?
+  
+  override init() {
+    super.init()
+  }
+  
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    settingsWindow = SettingsWindow()
+    settingsWindow?.showWindow(nil)
+  }
+  
+  func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    return true
   }
 }
 
 class SettingsWindow: NSWindow {
   init() {
-    super.init(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+    super.init(contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
                styleMask: [.titled, .closable, .miniaturizable],
                backing: .buffered,
                defer: false)
     
     self.title = "Mac Freeze Settings"
     self.center()
+    self.delegate = self
     
     let settingsView = SettingsView()
     self.contentView = settingsView
@@ -28,6 +34,52 @@ class SettingsWindow: NSWindow {
   
   func showWindow(_ sender: Any?) {
     self.makeKeyAndOrderFront(sender)
+  }
+}
+
+extension SettingsWindow: NSWindowDelegate {
+  func windowWillClose(_ notification: Notification) {
+    // Notify the main app to reload configuration
+    notifyMainAppToReload()
+  }
+  
+  private func notifyMainAppToReload() {
+    // Send a signal to the main app process
+    let mainAppPID = getMainAppPID()
+    if mainAppPID > 0 {
+      kill(mainAppPID, SIGUSR1)
+    }
+  }
+  
+  private func getMainAppPID() -> pid_t {
+    // Look for the main MacFreeze app process
+    let task = Process()
+    task.launchPath = "/bin/ps"
+    task.arguments = ["-ax", "-o", "pid,command"]
+    
+    let pipe = Pipe()
+    task.standardOutput = pipe
+    
+    do {
+      try task.run()
+      task.waitUntilExit()
+      
+      let data = pipe.fileHandleForReading.readDataToEndOfFile()
+      let output = String(data: data, encoding: .utf8) ?? ""
+      
+      for line in output.components(separatedBy: .newlines) {
+        if line.contains("mac_freeze") && !line.contains("SettingsApp") {
+          let components = line.trimmingCharacters(in: .whitespaces).components(separatedBy: " ")
+          if let pidString = components.first, let pid = Int32(pidString) {
+            return pid
+          }
+        }
+      }
+    } catch {
+      print("Error finding main app PID: \(error)")
+    }
+    
+    return -1
   }
 }
 
@@ -47,26 +99,7 @@ class SettingsView: NSView {
   }
   
   private func setupUI() {
-    // Create scroll view
-    scrollView = NSScrollView(frame: NSRect(x: 20, y: 20, width: 360, height: 200))
-    scrollView.hasVerticalScroller = true
-    scrollView.autohidesScrollers = true
-    scrollView.borderType = .bezelBorder
-    
-    // Create stack view for app entries
-    stackView = NSStackView()
-    stackView.orientation = .vertical
-    stackView.spacing = 8
-    stackView.edgeInsets = NSEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-    
-    // Add app entries
-    loadAppEntries()
-    
-    scrollView.documentView = stackView
-    addSubview(scrollView)
-    
-    // Add buttons
+    // Buttons at top
     let buttonStack = NSStackView()
     buttonStack.orientation = .horizontal
     buttonStack.spacing = 10
@@ -82,17 +115,40 @@ class SettingsView: NSView {
     
     addSubview(buttonStack)
     
-    // Set up constraints
+    // Scroll view for apps
+    scrollView = NSScrollView()
+    scrollView.hasVerticalScroller = true
+    scrollView.autohidesScrollers = true
+    scrollView.borderType = .bezelBorder
+    scrollView.translatesAutoresizingMaskIntoConstraints = false
+    
+    // Stack view for app entries
+    stackView = NSStackView()
+    stackView.orientation = .vertical
+    stackView.spacing = 5
+    stackView.edgeInsets = NSEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+    stackView.translatesAutoresizingMaskIntoConstraints = false
+    
+    loadAppEntries()
+    
+    scrollView.documentView = stackView
+    addSubview(scrollView)
+    
+    // Constraints
     NSLayoutConstraint.activate([
       buttonStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
       buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-      buttonStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20),
-      buttonStack.heightAnchor.constraint(equalToConstant: 30)
+      buttonStack.topAnchor.constraint(equalTo: topAnchor, constant: 20),
+      buttonStack.heightAnchor.constraint(equalToConstant: 30),
+      
+      scrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+      scrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+      scrollView.topAnchor.constraint(equalTo: buttonStack.bottomAnchor, constant: 10),
+      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20)
     ])
   }
   
   private func loadAppEntries() {
-    // Load current settings from blacklist.json
     let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("blacklist.json")
     if let data = try? Data(contentsOf: url),
        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -104,6 +160,11 @@ class SettingsView: NSView {
         let delay = entry["delay"] as? TimeInterval ?? 30
         
         let appEntry = AppEntryView(type: type, identifier: identifier, delay: delay)
+        appEntry.onRemove = { [weak self] in
+          if let index = self?.appEntries.firstIndex(of: appEntry) {
+            self?.appEntries.remove(at: index)
+          }
+        }
         appEntries.append(appEntry)
         stackView.addArrangedSubview(appEntry)
       }
@@ -112,8 +173,13 @@ class SettingsView: NSView {
   
   @objc private func addApp() {
     let appEntry = AppEntryView(type: "bundleID", identifier: "", delay: 30)
-    appEntries.append(appEntry)
-    stackView.addArrangedSubview(appEntry)
+    appEntry.onRemove = { [weak self] in
+      if let index = self?.appEntries.firstIndex(of: appEntry) {
+        self?.appEntries.remove(at: index)
+      }
+    }
+    appEntries.insert(appEntry, at: 0)
+    stackView.insertArrangedSubview(appEntry, at: 0)
   }
   
   @objc private func saveSettings() {
@@ -141,10 +207,6 @@ class SettingsView: NSView {
     if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
       let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("blacklist.json")
       try? data.write(to: url)
-      
-      // Reload configuration
-      MacFreezeApp.shared?.loadConfiguration()
-      
       self.window?.close()
     }
   }
@@ -158,6 +220,7 @@ class AppEntryView: NSView {
   var type: String
   var appIdentifier: String
   var delay: TimeInterval
+  var onRemove: (() -> Void)?
   
   private var typePopUp: NSPopUpButton!
   private var identifierField: NSTextField!
@@ -182,7 +245,7 @@ class AppEntryView: NSView {
   private func setupUI() {
     let stackView = NSStackView()
     stackView.orientation = .horizontal
-    stackView.spacing = 8
+    stackView.spacing = 10
     stackView.translatesAutoresizingMaskIntoConstraints = false
     
     // Type selector
@@ -202,10 +265,6 @@ class AppEntryView: NSView {
     identifierField.action = #selector(identifierChanged)
     identifierField.setContentHuggingPriority(.defaultLow, for: .horizontal)
     
-    // Delay label
-    let delayLabel = NSView.label(text: "Delay:")
-    delayLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    
     // Delay field
     delayField = NSTextField()
     delayField.stringValue = String(format: "%.0f", delay)
@@ -223,19 +282,17 @@ class AppEntryView: NSView {
     
     stackView.addArrangedSubview(typePopUp)
     stackView.addArrangedSubview(identifierField)
-    stackView.addArrangedSubview(delayLabel)
     stackView.addArrangedSubview(delayField)
     stackView.addArrangedSubview(removeButton)
     
     addSubview(stackView)
     
-    // Set up constraints
     NSLayoutConstraint.activate([
       stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
       stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
       stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
       stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
-      heightAnchor.constraint(equalToConstant: 35)
+      heightAnchor.constraint(equalToConstant: 30)
     ])
   }
   
@@ -253,6 +310,12 @@ class AppEntryView: NSView {
   }
   
   @objc private func remove() {
+    onRemove?()
     self.removeFromSuperview()
   }
-} 
+}
+
+// Run the settings app
+let app = SettingsApp()
+NSApplication.shared.delegate = app
+NSApplication.shared.run() 
