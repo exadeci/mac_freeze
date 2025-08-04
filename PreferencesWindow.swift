@@ -133,11 +133,15 @@ class PreferencesView: NSView {
     var blacklist: [[String: Any]] = []
     
     for entry in appEntries {
-      if !entry.appIdentifier.isEmpty {
+      // Ensure we get the current text field value
+      let currentIdentifier = entry.identifierField.stringValue
+      let currentDelay = TimeInterval(entry.delayField.stringValue) ?? entry.delay
+      
+      if !currentIdentifier.isEmpty {
         let dict: [String: Any] = [
           "type": "glob",
-          "pattern": entry.appIdentifier,
-          "delay": entry.delay
+          "pattern": currentIdentifier,
+          "delay": currentDelay
         ]
         
         blacklist.append(dict)
@@ -148,12 +152,17 @@ class PreferencesView: NSView {
     
     if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
       let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("blacklist.json")
-      try? data.write(to: url)
       
-      // Reload configuration in main app
-      MacFreezeApp.shared?.loadConfiguration()
-      
-      self.window?.close()
+      do {
+        try data.write(to: url)
+        
+        // Reload configuration in main app
+        MacFreezeApp.shared?.loadConfiguration()
+        
+        self.window?.close()
+      } catch {
+        print("Error writing to file: \(error)")
+      }
     }
   }
   
@@ -169,8 +178,8 @@ class AppEntryView: NSView {
   var onRemove: (() -> Void)?
   
   private var typePopUp: NSPopUpButton!
-  private var identifierField: NSTextField!
-  private var delayField: NSTextField!
+  var identifierField: NSTextField!
+  var delayField: NSTextField!
   
   init(type: String, identifier: String, delay: TimeInterval) {
     self.type = type
