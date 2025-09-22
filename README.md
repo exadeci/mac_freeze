@@ -1,6 +1,10 @@
 # MacFreeze
 
-A macOS utility that automatically freezes (suspends) applications after they become inactive for a configurable period. This helps reduce system resource usage by pausing applications you're not actively using.
+A macOS utility that automatically freezes (suspends) applications after they become inactive for a configurable period. 
+
+This helps reduce cpu usage by pausing applications you're not actively using with no delay when un-freezing them.
+
+Quite useful for applications that tend to be CPU hungry even when in the background, like Firefox or Rekordbox.
 
 ## Features
 
@@ -131,7 +135,7 @@ The settings window allows you to:
 
 ## License
 
-This project is open source. See the source code for licensing details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
