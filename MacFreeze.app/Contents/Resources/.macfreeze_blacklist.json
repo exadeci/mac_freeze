@@ -1,0 +1,16 @@
+{
+  "blacklist": [
+    {
+      "pattern": "firefox.*",
+      "delay": 30
+    },
+    {
+      "pattern": "chrome.*",
+      "delay": 30
+    },
+    {
+      "pattern": "rekordbox.*",
+      "delay": 60
+    }
+  ]
+} 

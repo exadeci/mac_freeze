@@ -37,6 +37,12 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
                                             .appendingPathComponent(".macfreeze_blacklist.json")
     print("Config file path: \(url)")
     
+    // Check if this is first launch (config file doesn't exist)
+    if !FileManager.default.fileExists(atPath: url.path) {
+      print("First launch detected - copying default blacklist...")
+      copyDefaultBlacklist(to: url)
+    }
+    
     do {
       let data = try Data(contentsOf: url)
       print("Config file found, size: \(data.count) bytes")
@@ -55,6 +61,24 @@ class MacFreezeApp: NSObject, NSApplicationDelegate {
       print("Configuration loaded successfully")
     } catch {
       print("Failed to load configuration: \(error)")
+    }
+  }
+  
+  // Copy default blacklist file to user's home directory
+  private func copyDefaultBlacklist(to destinationURL: URL) {
+    // Look for the default blacklist file in the app bundle
+    guard let defaultBlacklistPath = Bundle.main.path(forResource: ".macfreeze_blacklist", ofType: "json") else {
+      print("ERROR: Default blacklist file not found in app bundle!")
+      return
+    }
+    
+    let sourceURL = URL(fileURLWithPath: defaultBlacklistPath)
+    
+    do {
+      try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+      print("Default blacklist copied to: \(destinationURL.path)")
+    } catch {
+      print("ERROR: Failed to copy default blacklist: \(error)")
     }
   }
   

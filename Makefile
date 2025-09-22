@@ -33,6 +33,10 @@ $(APP_BUNDLE): $(SOURCES) Info.plist
 		cp -r icons $(APP_NAME)/Contents/Resources/; \
 		echo "Status bar icons added to app bundle"; \
 	fi
+	@if [ -f .macfreeze_blacklist.json ]; then \
+		cp .macfreeze_blacklist.json $(APP_NAME)/Contents/Resources/; \
+		echo "Default blacklist added to app bundle"; \
+	fi
 	@echo "App bundle created: $(APP_NAME)"
 
 # Run the app bundle
